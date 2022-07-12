@@ -6,74 +6,54 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+# Create your views here.
 
 from django.contrib.auth.models import User, Group
 from rest_framework import viewsets
 from rest_framework import permissions
-from administrativo.serializers import UserSerializer, GroupSerializer, \
-EdificioSerializer, DepartamentoSerializer
+from administrativo.serializers import UserSerializer, GroupSerializer, EdificioSerializer, DepartamentoSerializer
 
-# importar las clases de models.py
 from administrativo.models import *
-
-# importar los formularios de forms.py
 from administrativo.forms import *
 
-# Create your views here.
-
 def index(request):
-    """
-        Listar los registros del modelo Estudiante,
-        obtenidos de la base de datos.
-    """
-    # a través del ORM de django se obtiene
-    # los registros de la entidad; el listado obtenido
-    # se lo almacena en una variable llamada
-    # estudiantes
     edificios = Edificio.objects.all()
-    # en la variable tipo diccionario llamada informacion_template
-    # se agregará la información que estará disponible
-    # en el template
-    informacion_template = {'edificios': edificios, 'numero_edificios': len(edificios)}
-    return render(request, 'index.html', informacion_template)
+    informacion_template = {'edificios':edificios, 'numero_edificios': len(edificios)}
+    return render(request, 'index.html',informacion_template)
 
 
+
+@login_required(login_url='/entrando/login/')
 def obtener_edificio(request, id):
-    """
-        Listar los registros del modelo Estudiante,
-        obtenidos de la base de datos.
-    """
-    # a través del ORM de django se obtiene
-    # los registros de la entidad; el listado obtenido
-    # se lo almacena en una variable llamada
-    # estudiantes
-    edificio = Edificio.objects.get(pk=id)
-    # en la variable tipo diccionario llamada informacion_template
-    # se agregará la información que estará disponible
-    # en el template
-    informacion_template = {'edificio': edificio}
+    edificios = Edificio.objects.get(pk=id)
+    informacion_template = {'edificio':edificios}
     return render(request, 'obtener_edificio.html', informacion_template)
 
 
+@login_required(login_url='/entrando/login/')
+def obtener_departamento(request, id):
+    departamento = Departamento.objects.get(pk=id)
+    informacion_template = {'departamento':departamento}
+    return render(request, 'obtener_departamento.html', informacion_template)
+
+
+@login_required(login_url='/entrando/login/')
 def crear_edificio(request):
-    """
-    """
-    if request.method=='POST':
+    if request.method =='POST':
         formulario = EdificioForm(request.POST)
         print(formulario.errors)
         if formulario.is_valid():
-            formulario.save() # se guarda en la base de datos
+            formulario.save()
             return redirect(index)
     else:
         formulario = EdificioForm()
     diccionario = {'formulario': formulario}
 
-    return render(request, 'crearEdificio_3.html', diccionario)
+    return render(request, 'crear_edificio.html', diccionario)
 
 
+@login_required(login_url='/entrando/login/')
 def editar_edificio(request, id):
-    """
-    """
     edificio = Edificio.objects.get(pk=id)
     if request.method=='POST':
         formulario = EdificioForm(request.POST, instance=edificio)
@@ -85,21 +65,18 @@ def editar_edificio(request, id):
         formulario = EdificioForm(instance=edificio)
     diccionario = {'formulario': formulario}
 
-    return render(request, 'editarEdificio.html', diccionario)
+    return render(request, 'editar_edificio.html', diccionario)
 
 
+@login_required(login_url='/entrando/login/')
 def eliminar_edificio(request, id):
-    """
-    """
     edificio = Edificio.objects.get(pk=id)
     edificio.delete()
     return redirect(index)
 
 
+@login_required(login_url='/entrando/login/')
 def crear_departamento(request):
-    """
-    """
-
     if request.method=='POST':
         formulario = NumeroDepaForm(request.POST)
         print(formulario.errors)
@@ -110,12 +87,11 @@ def crear_departamento(request):
         formulario = NumeroDepaForm()
     diccionario = {'formulario': formulario}
 
-    return render(request, 'crearNumeroDepa.html', diccionario)
+    return render(request, 'crear_departamento.html', diccionario)
 
 
+@login_required(login_url='/entrando/login/')
 def editar_departamento(request, id):
-    """
-    """
     departamento = Departamento.objects.get(pk=id)
     if request.method=='POST':
         formulario = NumeroDepaForm(request.POST, instance=departamento)
@@ -127,12 +103,19 @@ def editar_departamento(request, id):
         formulario = NumeroDepaForm(instance=departamento)
     diccionario = {'formulario': formulario}
 
-    return render(request, 'crearNumeroDepa.html', diccionario)
+    return render(request, 'editar_departamento.html', diccionario)
 
-def crear_departamento_edificio(request, id):
-    """
-    """
-    edificio= Edificio.objects.get(pk=id)
+
+@login_required(login_url='/entrando/login/')
+def eliminar_departamento(request, id):
+    departamento = Departamento.objects.get(pk=id)
+    departamento.delete()
+    return redirect(index)
+
+
+@login_required(login_url='/entrando/login/')
+def crear_departamento_edificio(request,id):
+    edificio = Edificio.objects.get(pk=id)
     if request.method=='POST':
         formulario = NumeroDepaEdificioForm(edificio, request.POST)
         print(formulario.errors)
@@ -143,8 +126,34 @@ def crear_departamento_edificio(request, id):
         formulario = NumeroDepaEdificioForm(edificio)
     diccionario = {'formulario': formulario, 'edificio': edificio}
 
-    return render(request, 'crearNumeroDepaEdificio.html', diccionario)
+    return render(request, 'crear_departamentoEdificio.html', diccionario)
 
+
+# Login y logout 
+
+def ingreso(request):
+
+    if request.method == "POST":
+        form = AuthenticationForm(request=request, data=request.POST)
+        print(form.errors)
+        if form.is_valid():
+            username = form.data.get("username")
+            raw_password = form.data.get("password")
+            user = authenticate(username=username, password=raw_password)
+            if user is not None:
+                login(request, user)
+                return redirect(index)
+    else:
+        form = AuthenticationForm()
+
+    informacion_template = {'form': form}
+    return render(request, 'registration/login.html', informacion_template)
+
+def logout_view(request):
+    logout(request)
+    messages.info(request, "Has salido del sistema")
+    return redirect(index)
+    
 # crear vistas a través de viewsets
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -172,7 +181,7 @@ class EdificioViewSet(viewsets.ModelViewSet):
     """
     queryset = Edificio.objects.all()
     serializer_class = EdificioSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class DepartamentoViewSet(viewsets.ModelViewSet):
@@ -182,4 +191,4 @@ class DepartamentoViewSet(viewsets.ModelViewSet):
     """
     queryset = Departamento.objects.all()
     serializer_class = DepartamentoSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
